@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"coverage-gutters.coverageFileNames": [
+			"coverage.*.xml"
+		],
+		"coverage-gutters.showLineCoverage": true,
+		"coverage-gutters.showGutterCoverage": false,
+		"dotnet-test-explorer.enableTelemetry": false,
+		"dotnet-test-explorer.testProjectPath": "**/tests/*.Tests.csproj",
+		"dotnet-test-explorer.testArguments": "/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./Coverage/",
+		"workbench.tree.indent": 16
+	}
+}
