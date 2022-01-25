@@ -11,6 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Courseloop\Models\src\Courseloop.Models.csproj" />
+    <ProjectReference Include="..\..\..\Courseloop\Models\src\Courseloop.Models.csproj" />
   </ItemGroup>
 </Project>

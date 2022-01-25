@@ -13,11 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Courseloop\Models\src\Courseloop.Models.csproj" />
-    <ProjectReference Include="..\..\Courseloop\DataAccess\src\Courseloop.DataAccess.csproj" />
-    <ProjectReference Include="..\..\HXR.Utilities\HXR.Utilities.csproj" />
-    <ProjectReference Include="..\..\Planner.Models\Planner.Models.csproj" />
-    <ProjectReference Include="..\..\Planner.Models\src\Planner.Models.csproj" />
+    <ProjectReference Include="..\..\Models\src\Planner.Models.csproj" />
+    <ProjectReference Include="..\..\..\Courseloop\DataAccess\src\Courseloop.DataAccess.csproj" />
+    <ProjectReference Include="..\..\..\Courseloop\Models\src\Courseloop.Models.csproj" />
+    <ProjectReference Include="..\..\..\HXR.Utilities\HXR.Utilities.csproj" />
   </ItemGroup>
 
 </Project>
