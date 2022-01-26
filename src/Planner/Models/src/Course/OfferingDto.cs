@@ -19,7 +19,7 @@ public record OfferingDto
     public string Name { get; init; } = string.Empty;
     public List<string>? AttendanceType { get; init; }
     //public LabelledValue AcademicItem { get; init; }
-    public ushort Year { get; init; }
+    public string Year { get; init; } = string.Empty;
     public bool EntryPoint { get; init; }
     public string ClarificationToAppearInHandbook { get; init; } = string.Empty;
     public string Order { get; init; } = string.Empty;
