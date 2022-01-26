@@ -8,7 +8,6 @@ using Courseloop.Models.Unit;
 
 public interface IMacquarieHandbook
 {
-    Task<string> GetUnitRawJson(string unitCode);
     Task<MacquarieDataCollection<MacquarieCourse>> GetAllCourses(int? implementationYear = null, int limit = 3000, CancellationToken cancellationToken = default);
     Task<MacquarieDataCollection<MacquarieUnit>> GetAllUnits(int? implementationYear = null, int limit = 3000, CancellationToken cancellationToken = default);
     Task<MacquarieCourse> GetCourse(string courseCode, int? implementationYear = null, CancellationToken cancellationToken = default);

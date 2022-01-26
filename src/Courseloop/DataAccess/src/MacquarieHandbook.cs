@@ -71,13 +71,6 @@ public class MacquarieHandbook : IMacquarieHandbook
         var resultsCollection = await DownloadDataAsCollection<MacquarieUnit>(apiRequestBuilder);
         return resultsCollection.Collection.FirstOrDefault() ?? new MacquarieUnit() { Code = "Not Found" };
     }
-
-    public async Task<string> GetUnitRawJson(string unitCode)
-    {
-        var request = new HandbookApiRequestBuilder(unitCode, 2022, APIResourceType.Unit);
-        return await DownloadJsonDataFromUrl(request.ToString(), default);
-    }
-
     public async Task<MacquarieDataCollection<MacquarieUnit>> GetAllUnits(int? implementationYear = null, int limit = 3000, CancellationToken cancellationToken = default)
     {
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
