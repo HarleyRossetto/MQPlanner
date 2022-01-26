@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers()
-    //Don't include null values in return result. Save space.
+    // Don't include null values in return result. Save space.
     .AddJsonOptions(opt => {
         opt.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault;
 });
@@ -23,9 +23,16 @@ builder.Logging.AddConsole();
 builder.Services.AddSingleton<IMacquarieHandbook, MacquarieHandbook>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
-//Configure class mappings via profile.
+// Configure class mappings via profile.
 builder.Services.AddAutoMapper(cfg => {
     cfg.AddProfile<MacquarieDtoMappingProfile>();
+});
+
+// Enable in-memory cache, check for expired items every 15 minutes minimum.
+builder.Services.AddMemoryCache(options => {
+    options.ExpirationScanFrequency = TimeSpan.FromMinutes(15);
+    //options.SizeLimit = 1000L; // Set maximum size of cache
+    // TODO Determine appropriate size for in-memory cache.
 });
 
 var app = builder.Build();
