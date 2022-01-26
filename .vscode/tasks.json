@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src/Courseloop/Models/test/Courseloop.Models.Tests.csproj",
+                "${workspaceFolder}/src/Planner/API/src/Planner.Api.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/src/Courseloop/Models/test/Courseloop.Models.Tests.csproj",
+                "${workspaceFolder}/src/Planner/API/src/Planner.Api.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,9 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/src/Courseloop/Models/test/Courseloop.Models.Tests.csproj"
+                "${workspaceFolder}/src/Planner/API/src/Planner.Api.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
         }
