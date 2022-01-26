@@ -1,10 +1,10 @@
 namespace Planner.Api.Controllers;
 
-using System.Diagnostics;
 using System.Threading.Tasks;
 using AutoMapper;
 using Courseloop.DataAccess;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Planner.Models.Course;
 using Planner.Models.Unit;
 
@@ -16,22 +16,34 @@ public class HandbookController : ControllerBase
     private readonly IMacquarieHandbook _handbook;
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
+    private readonly IMemoryCache _cache;
 
-    public HandbookController(ILogger<HandbookController> logger, IMacquarieHandbook handbook, IMapper mapper, IConfiguration configuration) {
+    public HandbookController(ILogger<HandbookController> logger, IMacquarieHandbook handbook, IMapper mapper, IConfiguration configuration, IMemoryCache cache) {
         _logger = logger;
         _handbook = handbook;
         _mapper = mapper;
         _configuration = configuration;
+        _cache = cache;
     }
 
     [HttpGet("[action]/{unitCode}")]
     public async Task<UnitDto> GetUnit(string unitCode = "elec3042") {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", unitCode);
-        return _mapper.Map<UnitDto>(await _handbook.GetUnit(unitCode));
+
+        // TODO Review how best to implement cacheing across all data.
+        if (_cache.TryGetValue<UnitDto>(unitCode.ToUpper(), out UnitDto cachedUnit)) {
+            return cachedUnit;
+        }
+        
+        var unit = _mapper.Map<UnitDto>(await _handbook.GetUnit(unitCode));
+
+        _cache.Set(unit.Code, unit, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
+
+        return unit;
     }
 
     [HttpGet("[action]/{courseCode}")]
-    public async Task<CourseDto> GetCourse(string courseCode = "C000006") {
+    public async Task<CourseDto> GetCourse(string courseCode = "C000105") {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", courseCode);
         return _mapper.Map<CourseDto>(await _handbook.GetCourse(courseCode));
     }
