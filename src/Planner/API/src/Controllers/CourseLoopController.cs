@@ -15,10 +15,4 @@ public class CourseLoopController : ControllerBase
         _logger = logger;
         _handbook = handbook;
     }
-
-    [HttpGet(Name = "GetUnitCMSJson/{unitCode}")]
-    public async Task<string> GetUnit(string unitCode) {
-        _logger.LogInformation("Attempting to retrieve data for {unitCode}", unitCode);
-        return await _handbook.GetUnitRawJson(unitCode);
-    }
 }
