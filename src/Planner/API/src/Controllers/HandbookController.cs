@@ -3,8 +3,11 @@ namespace Planner.Api.Controllers;
 using System.Threading.Tasks;
 using AutoMapper;
 using Courseloop.DataAccess;
+using Courseloop.Models.Unit;
+using HXR.Utilities.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Planner.Api.Services.DataAccess;
 using Planner.Models.Course;
 using Planner.Models.Unit;
 
@@ -17,123 +20,99 @@ public class HandbookController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
+    private readonly IHandbookDataProvider _handbookDataProvider;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public HandbookController(ILogger<HandbookController> logger, IMacquarieHandbook handbook, IMapper mapper, IConfiguration configuration, IMemoryCache cache) {
+    public HandbookController(ILogger<HandbookController> logger, IMacquarieHandbook handbook, IMapper mapper, IConfiguration configuration, IMemoryCache cache, IHandbookDataProvider handbookDataProvider, IDateTimeProvider dateTimeProvider) {
         _logger = logger;
         _handbook = handbook;
         _mapper = mapper;
         _configuration = configuration;
         _cache = cache;
+        _handbookDataProvider = handbookDataProvider;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     [HttpGet("[action]/{unitCode}")]
-    public async Task<UnitDto> GetUnit(string unitCode = "elec3042") {
+    public async Task<UnitDto> GetUnit(string unitCode = "elec3042", [FromQuery] int? implementationYear = null, CancellationToken cancellationToken = default) {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", unitCode);
 
-        // TODO Review how best to implement cacheing across all data.
-        if (_cache.TryGetValue<UnitDto>(unitCode.ToUpper(), out UnitDto cachedUnit)) {
-            return cachedUnit;
-        }
+        // // TODO Review how best to implement cacheing across all data.
+        // if (_cache.TryGetValue<UnitDto>(unitCode.ToUpper(), out UnitDto cachedUnit)) {
+        //     return cachedUnit;
+        // }
         
-        var unit = _mapper.Map<UnitDto>(await _handbook.GetUnit(unitCode));
+        // var unit = _mapper.Map<UnitDto>(await _handbook.GetUnitAsync(unitCode));
 
-        _cache.Set(unit.Code, unit, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
+        // _cache.Set(unit.Code, unit, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
 
-        return unit;
+        // return unit;
+        return await _handbookDataProvider.GetUnit(unitCode, implementationYear, cancellationToken);   
+    }
+
+     [HttpGet("[action]/{unitCode}")]
+    public async Task<MacquarieUnit> GetCourseLoopUnit(string unitCode = "elec3042", [FromQuery] int? implementationYear = null, CancellationToken cancellationToken = default) {
+        // _logger.LogInformation("Attempting to retrieve data for {unitCode}", unitCode);
+
+        // // TODO Review how best to implement cacheing across all data.
+        // if (_cache.TryGetValue<UnitDto>(unitCode.ToUpper(), out UnitDto cachedUnit)) {
+        //     return cachedUnit;
+        // }
+
+        // var unit = _mapper.Map<UnitDto>(await _handbook.GetUnitAsync(unitCode));
+
+        // _cache.Set(unit.Code, unit, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
+
+        // return unit;
+        implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
+        return await _handbook.GetUnit(unitCode, implementationYear, cancellationToken);
     }
 
     [HttpGet("[action]/{courseCode}")]
     public async Task<CourseDto> GetCourse(string courseCode = "C000105") {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", courseCode);
-        return _mapper.Map<CourseDto>(await _handbook.GetCourse(courseCode));
+        // return _mapper.Map<CourseDto>(await _handbook.GetCourseAsync(courseCode));
+        return await _handbookDataProvider.GetCourse(courseCode);
     }
 
-    [HttpGet("[action]/{courseCode}")]
-    public async Task<CurriculumStructureDataDto> GetCourseStructure(string courseCode = "C000006") {
-        _logger.LogInformation("Attempting to retrieve data for {unitCode}", courseCode);
-        return _mapper.Map<CurriculumStructureDataDto>((await _handbook.GetCourse(courseCode)).CurriculumData);
-    }
+    [HttpGet("[action]/{courseName}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CourseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCoursesWithNameContaining(string courseName = "Information", [FromQuery] int? implementationYear = null, CancellationToken cancellationToken = default) {
+        var result = await _handbookDataProvider.GetCoursesWithNameContainer(courseName, implementationYear);
 
-    [HttpGet("[action]")]
-    public async ValueTask<int> GetUnitCount(CancellationToken cancellationToken, int? implementationYear = null) {
-        _logger.LogInformation("Attemping to retrieve all units to determine count");
-        return (await _handbook.GetAllUnits(implementationYear: implementationYear, cancellationToken: cancellationToken)).Count;
-    }
-
-    [HttpGet("[action]")]
-    public async Task<IEnumerable<string>> GetAllUnitCodes(int? implementationYear = null) {
-        var allUnits = await _handbook.GetAllUnits(implementationYear ?? int.Parse(_configuration["DefaultYear"]));
-
-        if (allUnits is null)
-            return new string[] { "Unable to access all unit data." };
-
-        return from unit in allUnits.Collection
-               select unit.Code;
-    }
-
-/*
-    [HttpGet("[action]")]
-    public async Task<Dictionary<string, Dictionary<string, int>>> GatherUnitStatistics() {
-        //Get all units for default year.
-        var units = await _handbook.GetAllUnits(int.Parse(_configuration["DefaultYear"]));
-
-        //If results is null or count is 0, return 1 and finish.
-        if (units is null || units.Count < 1)
-            return new();
-
-        _logger.LogInformation("Units loaded.");
-
-        //Key: string (property name)
-        //Value: Dictionary of string (value), and int (occurance count).
-        Dictionary<string, Dictionary<string, int>> valueMap = new();
-
-        foreach (var unit in units.Collection) {
-            foreach (var outcome in unit.Data.LearningOutcomes) {
-
-                var properties = outcome.GetType().GetProperties();
-                foreach (var property in properties) {
-
-                    //If the value map does not contain our property, create new map and add to map.
-                    if (!valueMap.TryGetValue(property.Name, out Dictionary<string, int>? map)) {
-                        map = new();
-                        valueMap.Add(property.Name, map);
-                    }
-
-                    var propValue = property.GetValue(outcome);
-
-                    //If value type dont need to inspect deeper
-                    if (property.DeclaringType!.IsValueType) {
-                        _logger.LogInformation("{type} is value type. Not logging.", property.Name);
-                    } else {
-                        var key = propValue?.ToString() ?? "null";
-                        if (map.ContainsKey(key)) {
-                            map[key]++;
-                        } else {
-                            map.Add(key, 1);
-                        }
-                    }
-                }
-            }
+        if (!result.Any()) {
+            return NotFound();
         }
-
-        return valueMap;
+        
+        return Ok(result);
     }
-    */
+
+    [HttpGet("[action]")]
+    public async Task<IActionResult> GetAllUnits([FromQuery]int? implmentationYear = null, CancellationToken cancellationToken = default) {
+        return Ok(await _handbookDataProvider.GetAllUnits(implmentationYear, cancellationToken));
+    }
+
+    // [HttpGet("[action]/{courseCode}")]
+    // public async Task<CurriculumStructureDataDto> GetCourseStructure(string courseCode = "C000006") {
+    //     _logger.LogInformation("Attempting to retrieve data for {unitCode}", courseCode);
+    //     return _mapper.Map<CurriculumStructureDataDto>((await _handbook.GetCourseAsync(courseCode)).CurriculumData);
+    // }
 
     // [HttpGet("[action]")]
-    // public async Task<Statistics> GetObjectStats() {
-    //     var sw = Stopwatch.StartNew();
-    //     //Get all units for default year.
-    //     var units = await _handbook.GetAllUnits(2021, 5);
-    //     sw.Stop();
-    //     _logger.LogInformation("Retrieved {count} units in {seconds}", units.Count, sw.ElapsedMilliseconds / 1000);
+    // public async ValueTask<int> GetUnitCount(CancellationToken cancellationToken, int? implementationYear = null) {
+    //     _logger.LogInformation("Attemping to retrieve all units to determine count");
+    //     return (await _handbook.GetAllUnitsAsync(implementationYear: implementationYear, cancellationToken: cancellationToken)).Count;
+    // }
 
-    //     //If results is null or count is 0, return 1 and finish.
-    //     if (units is null || units.Count < 1)
-    //         return new();
+    // [HttpGet("[action]")]
+    // public async Task<IEnumerable<string>> GetAllUnitCodes(int? implementationYear = null) {
+    //     var allUnits = await _handbook.GetAllUnitsAsync(implementationYear ?? int.Parse(_configuration["DefaultYear"]));
 
-    //     _logger.LogInformation("Units loaded.");
+    //     if (allUnits is null)
+    //         return new string[] { "Unable to access all unit data." };
 
-    //     return ObjectStatistics.GetObjectStatistics(units.Collection, true);
+    //     return from unit in allUnits.Collection
+    //            select unit.Code;
     // }
 }

@@ -1,6 +1,11 @@
+using System.Text.Json.Serialization;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using Courseloop.DataAccess;
 using HXR.Utilities.DateTime;
 using HXR.Utilities.DateTime.Providers;
+using Newtonsoft.Json;
+using Planner.Api.Services.DataAccess;
 using Planner.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,8 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     // Don't include null values in return result. Save space.
     .AddJsonOptions(opt => {
-        opt.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault;
-});
+        opt.JsonSerializerOptions.PropertyNamingPolicy = null;
+        opt.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -21,7 +27,12 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 builder.Services.AddSingleton<IMacquarieHandbook, MacquarieHandbook>();
+//builder.Services.AddSingleton<IMacquarieHandbook, CosmosHandbookProviderOld>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+builder.Services.AddSingleton<JsonSerializer>();
+builder.Services.AddSingleton<IHandbookDataProvider, PlannerHandbookDataProvider>();
+builder.Services.AddSingleton<MacquarieHandbook>();
+builder.Services.AddSingleton<CosmosHandbookDataProvider>();
 
 // Configure class mappings via profile.
 builder.Services.AddAutoMapper(cfg => {
@@ -35,6 +46,14 @@ builder.Services.AddMemoryCache(options => {
     // TODO Determine appropriate size for in-memory cache.
 });
 
+builder.Configuration.AddAzureKeyVault(new Uri($"https://{builder.Configuration["Azure:KeyVault:KvName"]}.vault.azure.net"),
+                                        new DefaultAzureCredential(new DefaultAzureCredentialOptions() {
+                                            ManagedIdentityClientId = builder.Configuration["Azure:ManagedIdentityClientId"]
+                                        }),
+                                        new AzureKeyVaultConfigurationOptions() {
+                                            ReloadInterval = TimeSpan.FromMinutes(15)
+                                        });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -46,7 +65,7 @@ if (app.Environment.IsDevelopment()) {
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization(); 
+app.UseAuthorization();
 
 app.MapControllers();
 
