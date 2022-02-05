@@ -6,5 +6,5 @@ public record IdentifiableRecord
 {
 
     [JsonProperty("cl_id")]
-    public string CL_ID { get; init; }
+    public string CL_ID { get; init; } = string.Empty;
 }
