@@ -7,8 +7,8 @@ public class HandbookApiRequestBuilder
 {
     protected StringBuilder API_STRING = new(250);
 
-    private string _code = null;
-    public string Code {
+    private string? _code = null;
+    public string? Code {
         get { return _code; }
         set {
             if (value is not null)
