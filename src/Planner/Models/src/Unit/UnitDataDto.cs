@@ -3,7 +3,7 @@ using Planner.Models.Unit.Prerequisites;
 
 namespace Planner.Models.Unit;
 
-public record UnitDataDto : MetadataDto
+public record UnitDataDto : MaterialMetadataDto
 {
     public string? GradingSchema { get; init; }
     //public string StudyLevel { get; init; }
@@ -21,15 +21,15 @@ public record UnitDataDto : MetadataDto
     //public string AscedBroad { get; init; }
     public string? PlacementProportion { get; init; }
     public List<string>? Description { get; init; }
-    public List<LearningOutcomeDto>? LearningOutcomes { get; init; } = default;
-    public List<LearningActivityDto>? NonScheduledLearningActivities { get; init; } = default;
+    public List<LearningOutcomeDto>? LearningOutcomes { get; init; }
+    public List<LearningActivityDto>? NonScheduledLearningActivities { get; init; }
     //public List<LearningActivityDto> ScheduledLearningActivites { get; init; }
-    public List<EnrolmentRuleDto>? EnrolmentRules { get; init; } = default;
-    public List<AssessmentDto>? Assessments { get; init; } = default;
-    public List<RequisiteDto>? Requisites { get; init; } = default;
-    public List<UnitOfferingDto>? Offering { get; init; } = default;
-    public string OfferingText { get; init; } = string.Empty;
-    public string SubjectSearchTitle { get; init; } = string.Empty;
+    public List<EnrolmentRuleDto>? EnrolmentRules { get; init; }
+    public List<AssessmentDto>? Assessments { get; init; }
+    public List<RequisiteDto>? Requisites { get; init; }
+    public List<UnitOfferingDto>? Offering { get; init; }
+    public string? OfferingText { get; init; } 
+    public string? SubjectSearchTitle { get; init; } 
     //public bool PublishTuitionFees { get; init; }
     //public bool D_gov_cohort_year { get; init; }
     //public string DurationFullTimeMax { get; init; }

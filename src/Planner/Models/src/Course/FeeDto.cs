@@ -4,11 +4,11 @@ namespace Planner.Models.Course;
 
 public record FeeDto
 {
-    public string FeePerCreditPoint { get; init; } = string.Empty;
-    public string FeeNote { get; init; } = string.Empty;
-    public string OtherFeeType { get; init; } = string.Empty;
+    public string? FeePerCreditPoint { get; init; }
+    public string? FeeNote { get; init; }
+    public string? OtherFeeType { get; init; }
     public List<KeyValueIdType>? Intakes { get; init; }
     public bool AppliesToAllIntakes { get; init; }
-    public string EstimatedAnnualFee { get; init; } = string.Empty;
-    public string FeeType { get; init; } = string.Empty;
+    public string? EstimatedAnnualFee { get; init; }
+    public string? FeeType { get; init; }
 }

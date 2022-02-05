@@ -2,8 +2,8 @@ namespace Planner.Models.Course;
 
 public record AdmissionRequirementPointDto
 {
-    public string AdmissionRequirement { get; init; } = string.Empty;
-    public string VolumeOfLearning { get; init; } = string.Empty;
-    public uint CreditPoints { get; init; } = 0;
+    public string? AdmissionRequirement { get; init; }
+    public string? VolumeOfLearning { get; init; }
+    public uint? CreditPoints { get; init; }
     public List<string>? StructureZones { get; init; }
 }
