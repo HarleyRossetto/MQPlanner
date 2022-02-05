@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Courseloop.Models.Course;
-using Courseloop.Models.Json.Helpers;
 using Courseloop.Models.Shared;
 using Courseloop.Models.Unit;
 using HXR.Utilities.DateTime;
