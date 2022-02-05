@@ -1,6 +1,7 @@
 [Oo]bj/
 [Bb]in/
 [Cc]overage/
+[Pp]ublish/
 .nuget/
 _ReSharper.*
 packages/

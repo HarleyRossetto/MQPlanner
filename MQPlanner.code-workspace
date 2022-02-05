@@ -14,6 +14,6 @@
 		"dotnet-test-explorer.testProjectPath": "**/tests/*.Tests.csproj",
 		"dotnet-test-explorer.testArguments": "/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./Coverage/",
 		"workbench.tree.indent": 16,
-		"window.zoomLevel": 2
+		"window.zoomLevel": 2,
 	}
 }
