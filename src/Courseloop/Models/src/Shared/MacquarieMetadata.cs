@@ -13,6 +13,7 @@ public class MacquarieMetadata
     public DateTime? ModificationDate { get; set; }
     [JsonProperty("code")]
     public string Code { get; set; }
+    //TODO Redo this is a quick hack.
     public string CodeSubject
     {
         get => Code[..4];
