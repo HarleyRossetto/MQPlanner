@@ -23,6 +23,16 @@
             "type": "coreclr",
             "request": "attach",
             "processName": "Planner.Api"
-        }
+        },
+        {
+            "name": "ES_Test",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/TestProjects/ElasticSearch.Nest/bin/Debug/net6.0/ElasticSearch.Nest",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false
+        },
     ]
 }
