@@ -1,0 +1,24 @@
+/* curl -H "Content-Type: application/json" -XPOST https://macquarie-prod-handbook.factor5-curriculum.com.au/api/es/search -d ' 
+    {    
+        "query": {
+            "bool": {
+                "must": {
+                    "query_string": {
+                        "query": "contentType:mq2_psubject"
+                    }
+                },
+                "filter": {
+                    "range":{
+                        "modDate": {
+                            "gte": "01/01/2022",
+                            "format": "dd/MM/yyy||yyyyy"
+                        }
+                    }
+                }
+            }
+        },
+        "size": 25
+
+}
+' > mq2_psubject_modafter.json
+*/

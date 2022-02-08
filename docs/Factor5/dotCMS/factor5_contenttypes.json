@@ -1,0 +1,442 @@
+curl -H "Content-Type: application/json" -XPOST https://macquarie-prod-handbook.factor5-curriculum.com.au/api/es/search -d ' 
+    {    "aggs" : {
+        "tag" : {
+            "terms" : {
+                "field" : "contentType_dotraw",
+                "size" : 100   //the number of aggregations to return
+            }
+        }
+    },
+   "size":0    //the number of hits to return
+
+}
+' > factor5_contenttypes.json
+
+{
+    "contentlets": [],
+    "esresponse": [
+        {
+            "took": 5,
+            "timed_out": false,
+            "_shards": {
+                "total": 1,
+                "successful": 1,
+                "skipped": 0,
+                "failed": 0
+            },
+            "hits": {
+                "total": 645523,
+                "max_score": 0,
+                "hits": []
+            },
+            "aggregations": {
+                "tag": {
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 4168,
+                    "buckets": [
+                        {
+                            "key": "uow_psubjectoffering",
+                            "doc_count": 75651
+                        },
+                        {
+                            "key": "uow_asubjectoffering",
+                            "doc_count": 75647
+                        },
+                        {
+                            "key": "murdoch_asubjectoffering",
+                            "doc_count": 63718
+                        },
+                        {
+                            "key": "murdoch_psubjectoffering",
+                            "doc_count": 63718
+                        },
+                        {
+                            "key": "unsw_asubject",
+                            "doc_count": 22670
+                        },
+                        {
+                            "key": "unsw_psubject",
+                            "doc_count": 22659
+                        },
+                        {
+                            "key": "ltu_psubjectoffering",
+                            "doc_count": 18179
+                        },
+                        {
+                            "key": "ltu_asubjectoffering",
+                            "doc_count": 18170
+                        },
+                        {
+                            "key": "murdoch_asubject",
+                            "doc_count": 16555
+                        },
+                        {
+                            "key": "murdoch_psubject",
+                            "doc_count": 16554
+                        },
+                        {
+                            "key": "monash2_asubject",
+                            "doc_count": 16265
+                        },
+                        {
+                            "key": "monash2_psubject",
+                            "doc_count": 16264
+                        },
+                        {
+                            "key": "mq2cf_acfaoscomponents",
+                            "doc_count": 11613
+                        },
+                        {
+                            "key": "mq2cf_pcfaoscomponents",
+                            "doc_count": 11595
+                        },
+                        {
+                            "key": "flinders_asubjectoffering",
+                            "doc_count": 9024
+                        },
+                        {
+                            "key": "flinders_psubjectoffering",
+                            "doc_count": 9023
+                        },
+                        {
+                            "key": "mq2_asubject",
+                            "doc_count": 8044
+                        },
+                        {
+                            "key": "mq2_psubject",
+                            "doc_count": 8044
+                        },
+                        {
+                            "key": "uow_asubject",
+                            "doc_count": 7412
+                        },
+                        {
+                            "key": "uow_psubject",
+                            "doc_count": 7408
+                        },
+                        {
+                            "key": "flinders_asubject",
+                            "doc_count": 6317
+                        },
+                        {
+                            "key": "flinders_psubject",
+                            "doc_count": 6316
+                        },
+                        {
+                            "key": "ltu_psubject",
+                            "doc_count": 6242
+                        },
+                        {
+                            "key": "ltu_asubject",
+                            "doc_count": 6241
+                        },
+                        {
+                            "key": "uow_acourseoffering",
+                            "doc_count": 5833
+                        },
+                        {
+                            "key": "uow_pcourseoffering",
+                            "doc_count": 5828
+                        },
+                        {
+                            "key": "monash_asubject",
+                            "doc_count": 5487
+                        },
+                        {
+                            "key": "monash_psubject",
+                            "doc_count": 5487
+                        },
+                        {
+                            "key": "mq2cf_acfsubject",
+                            "doc_count": 4923
+                        },
+                        {
+                            "key": "mq2cf_pcfsubject",
+                            "doc_count": 4923
+                        },
+                        {
+                            "key": "une_asubject",
+                            "doc_count": 3865
+                        },
+                        {
+                            "key": "une_psubject",
+                            "doc_count": 3865
+                        },
+                        {
+                            "key": "mq_asubject",
+                            "doc_count": 3124
+                        },
+                        {
+                            "key": "mq_psubject",
+                            "doc_count": 3124
+                        },
+                        {
+                            "key": "mq2_adoubledegree",
+                            "doc_count": 2670
+                        },
+                        {
+                            "key": "mq2_pdoubledegree",
+                            "doc_count": 2670
+                        },
+                        {
+                            "key": "mq2cf_acfdouble",
+                            "doc_count": 2670
+                        },
+                        {
+                            "key": "mq2cf_pcfdouble",
+                            "doc_count": 2670
+                        },
+                        {
+                            "key": "unsw_aaos",
+                            "doc_count": 2619
+                        },
+                        {
+                            "key": "unsw_paos",
+                            "doc_count": 2619
+                        },
+                        {
+                            "key": "unsw_acourse",
+                            "doc_count": 2458
+                        },
+                        {
+                            "key": "unsw_pcourse",
+                            "doc_count": 2458
+                        },
+                        {
+                            "key": "uow_paosoffering",
+                            "doc_count": 2391
+                        },
+                        {
+                            "key": "uow_aaosoffering",
+                            "doc_count": 2387
+                        },
+                        {
+                            "key": "murdoch_aaos",
+                            "doc_count": 2159
+                        },
+                        {
+                            "key": "murdoch_paos",
+                            "doc_count": 2159
+                        },
+                        {
+                            "key": "murdoch_acourse",
+                            "doc_count": 2150
+                        },
+                        {
+                            "key": "murdoch_pcourse",
+                            "doc_count": 2150
+                        },
+                        {
+                            "key": "une_aaos",
+                            "doc_count": 2060
+                        },
+                        {
+                            "key": "une_paos",
+                            "doc_count": 2060
+                        },
+                        {
+                            "key": "ltu_acourse",
+                            "doc_count": 1625
+                        },
+                        {
+                            "key": "ltu_pcourse",
+                            "doc_count": 1623
+                        },
+                        {
+                            "key": "flinders_acourse",
+                            "doc_count": 1588
+                        },
+                        {
+                            "key": "flinders_pcourse",
+                            "doc_count": 1588
+                        },
+                        {
+                            "key": "uow_acourse",
+                            "doc_count": 1292
+                        },
+                        {
+                            "key": "uow_pcourse",
+                            "doc_count": 1291
+                        },
+                        {
+                            "key": "monash2_paos",
+                            "doc_count": 1173
+                        },
+                        {
+                            "key": "monash2_aaos",
+                            "doc_count": 1171
+                        },
+                        {
+                            "key": "monash2_acourse",
+                            "doc_count": 1131
+                        },
+                        {
+                            "key": "monash2_pcourse",
+                            "doc_count": 1129
+                        },
+                        {
+                            "key": "uow_paos",
+                            "doc_count": 930
+                        },
+                        {
+                            "key": "uow_aaos",
+                            "doc_count": 927
+                        },
+                        {
+                            "key": "fileasset",
+                            "doc_count": 813
+                        },
+                        {
+                            "key": "mq2_aaos",
+                            "doc_count": 806
+                        },
+                        {
+                            "key": "mq2_paos",
+                            "doc_count": 806
+                        },
+                        {
+                            "key": "mq2_acourse",
+                            "doc_count": 670
+                        },
+                        {
+                            "key": "mq2_pcourse",
+                            "doc_count": 670
+                        },
+                        {
+                            "key": "mq2cf_acfcourse",
+                            "doc_count": 670
+                        },
+                        {
+                            "key": "mq2cf_pcfcourse",
+                            "doc_count": 670
+                        },
+                        {
+                            "key": "ltu_aaos",
+                            "doc_count": 644
+                        },
+                        {
+                            "key": "ltu_paos",
+                            "doc_count": 644
+                        },
+                        {
+                            "key": "flinders_aaos",
+                            "doc_count": 643
+                        },
+                        {
+                            "key": "flinders_paos",
+                            "doc_count": 643
+                        },
+                        {
+                            "key": "mq2cf_acfaos",
+                            "doc_count": 504
+                        },
+                        {
+                            "key": "mq2cf_pcfaos",
+                            "doc_count": 504
+                        },
+                        {
+                            "key": "une_astatic_content",
+                            "doc_count": 421
+                        },
+                        {
+                            "key": "une_pstatic_content",
+                            "doc_count": 421
+                        },
+                        {
+                            "key": "une_pcourse",
+                            "doc_count": 412
+                        },
+                        {
+                            "key": "ltu_astatic_content",
+                            "doc_count": 411
+                        },
+                        {
+                            "key": "ltu_pstatic_content",
+                            "doc_count": 411
+                        },
+                        {
+                            "key": "monash_aaos",
+                            "doc_count": 396
+                        },
+                        {
+                            "key": "monash_paos",
+                            "doc_count": 396
+                        },
+                        {
+                            "key": "une_acourse",
+                            "doc_count": 389
+                        },
+                        {
+                            "key": "unsw_pstatic_content",
+                            "doc_count": 385
+                        },
+                        {
+                            "key": "mq_aaos",
+                            "doc_count": 384
+                        },
+                        {
+                            "key": "mq_paos",
+                            "doc_count": 384
+                        },
+                        {
+                            "key": "unsw_astatic_content",
+                            "doc_count": 382
+                        },
+                        {
+                            "key": "flinders_astatic_content",
+                            "doc_count": 355
+                        },
+                        {
+                            "key": "flinders_pstatic_content",
+                            "doc_count": 355
+                        },
+                        {
+                            "key": "monash2_astatic_content",
+                            "doc_count": 352
+                        },
+                        {
+                            "key": "monash2_pstatic_content",
+                            "doc_count": 352
+                        },
+                        {
+                            "key": "monash_acourse",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "monash_pcourse",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "mq2_astatic_content",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "mq2_pstatic_content",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "mq2cf_acfstatic_content",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "mq2cf_pcfstatic_content",
+                            "doc_count": 326
+                        },
+                        {
+                            "key": "uow_astatic_content",
+                            "doc_count": 304
+                        },
+                        {
+                            "key": "uow_pstatic_content",
+                            "doc_count": 304
+                        },
+                        {
+                            "key": "monash_astatic_content",
+                            "doc_count": 292
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
