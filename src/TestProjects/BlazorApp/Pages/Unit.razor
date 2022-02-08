@@ -1,0 +1,27 @@
+﻿@page "/unit"
+
+@using Planner.Models.Unit
+@inject Services.ApiService service;
+
+
+<PageTitle>Unit Information</PageTitle>
+
+<h3>Unit</h3>
+<input @bind="searchCode" placeholder="COMP1000"/>
+
+@if (unit == null) {
+    <p><em>No Data</em></p>
+} else {
+    <p>Unit Code: @(unit.Code)</p>
+}
+
+<button @onclick="loadData">Load Data</button>
+
+@code {
+    private string? searchCode;
+    private UnitDto? unit;
+
+    private async Task loadData() {
+        unit = await service.GetUnitAsync(searchCode);
+    }
+}
