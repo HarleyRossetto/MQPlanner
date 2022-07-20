@@ -31,7 +31,7 @@ builder.Services.AddSingleton<IMacquarieHandbook, MacquarieHandbook>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddSingleton<JsonSerializer>();
 builder.Services.AddSingleton<IHandbookDataProvider, PlannerHandbookDataProvider>();
-builder.Services.AddSingleton<MacquarieHandbook>();
+builder.Services.AddHttpClient<MacquarieHandbook>();
 builder.Services.AddSingleton<CosmosHandbookDataProvider>();
 
 // Configure class mappings via profile.

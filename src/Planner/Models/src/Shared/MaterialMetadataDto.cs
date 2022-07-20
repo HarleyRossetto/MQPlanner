@@ -2,10 +2,7 @@ using Courseloop.Models.Shared;
 
 namespace Planner.Models.Shared;
 
-public record NewBaseType {
-}
-
-public record MaterialMetadataDto : NewBaseType {
+public record MaterialMetadataDto {
     public List<Requirement>? InherentRequirements { get; init; }
     public ushort? ImplementationYear { get; init; }
     public string? Status { get; init; }

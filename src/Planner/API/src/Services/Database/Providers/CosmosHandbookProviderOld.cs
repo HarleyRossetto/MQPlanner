@@ -62,10 +62,12 @@ namespace Planner.Api.Services.Database.Providers {
             using (ResponseMessage responseMessage = await courseContainer.ReadItemStreamAsync(
                     partitionKey: new PartitionKey(courseCode[..4]),
                     id: itemKey)) {
+                var defaultCourse = new MacquarieCourse() { Code = "Not Found" };
+
                 if (responseMessage.IsSuccessStatusCode) {
-                    return FromStream<MacquarieCourse>(responseMessage.Content);
+                    return FromStream<MacquarieCourse>(responseMessage.Content) ?? defaultCourse;
                 } else {
-                    return new MacquarieCourse() { Code = "Not Found" };
+                    return defaultCourse;
                 }
             }
 
@@ -81,7 +83,7 @@ namespace Planner.Api.Services.Database.Providers {
         }
 
         //https://github.com/Azure/azure-cosmos-dotnet-v3/blob/63f4799b5eb7192401159548e346cb383570e07b/Microsoft.Azure.Cosmos.Samples/Usage/ItemManagement/Program.cs#L431
-        private T FromStream<T>(Stream stream) {
+        private T? FromStream<T>(Stream stream) {
             using (stream) {
                 if (typeof(Stream).IsAssignableFrom(typeof(T))) {
                     return (T)(object)(stream);

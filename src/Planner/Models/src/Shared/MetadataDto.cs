@@ -10,7 +10,7 @@ public record MetadataDto
     //by the original source, not set independantly.
     public DateTime DateRetrieved { get; init; } = DateTime.Now;
     public DateTime? ModificationDate { get; init; }
-    public string? Code { get; init; }
+    public string Code { get; init; } = String.Empty;
     public string? Title { get; init; }
     public string? ImplementationYear { get; init; }
     public string? StudyLevel { get; init; }
@@ -26,5 +26,5 @@ public record MetadataDto
     /// Cosmos ID
     /// </summary>
     [JsonProperty("id")]
-    public string? Id => Code;
+    public string? Id => $"{Code}{(Archived ? ModificationDate?.ToString(":yyyyMMddThhmmssZ") : "")}";
 }

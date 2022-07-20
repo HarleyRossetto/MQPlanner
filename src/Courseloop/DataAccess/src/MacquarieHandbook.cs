@@ -13,15 +13,15 @@ using static Courseloop.Models.Json.Helpers.JsonSerialisationHelper;
 
 public class MacquarieHandbook : IMacquarieHandbook
 {
-    private readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
     private readonly ILogger<MacquarieHandbook> _logger;
     public TimeSpan WebRequestTimeout { get => _httpClient.Timeout; set => _httpClient.Timeout = value; }
     public IDateTimeProvider _dateTimeProvider { get; }
 
-    public MacquarieHandbook(ILogger<MacquarieHandbook> handbookLogger, IDateTimeProvider _dateTimeProvider)
-    {
+    public MacquarieHandbook(ILogger<MacquarieHandbook> handbookLogger, IDateTimeProvider _dateTimeProvider, HttpClient httpClient) {
         _logger = handbookLogger;
         this._dateTimeProvider = _dateTimeProvider;
+        _httpClient = httpClient;
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class MacquarieHandbook : IMacquarieHandbook
 
         if (string.IsNullOrEmpty(jsonString))
         {
-            return default;
+            return new();
         }
         else
         {
@@ -64,11 +64,11 @@ public class MacquarieHandbook : IMacquarieHandbook
         return await DownloadDataAsCollection<T>(apiRequest.ToString(), cancellationToken);
     }
 
-    public async Task<MacquarieUnit> GetUnit(string unitCode, int? implementationYear = null, CancellationToken cancellationToken = default)
+    public async Task<MacquarieUnit?> GetUnit(string unitCode, int? implementationYear = null, CancellationToken cancellationToken = default)
     {
         HandbookApiRequestBuilder apiRequestBuilder = new(unitCode, implementationYear, APIResourceType.Unit);
         var resultsCollection = await DownloadDataAsCollection<MacquarieUnit>(apiRequestBuilder);
-        return resultsCollection.Collection.FirstOrDefault() ?? new MacquarieUnit() { Code = "Not Found" };
+        return resultsCollection.Collection.FirstOrDefault(defaultValue: null);
     }
     public async Task<MacquarieDataCollection<MacquarieUnit>> GetAllUnits(int? implementationYear = null, int limit = 3000, CancellationToken cancellationToken = default)
     {
@@ -80,11 +80,11 @@ public class MacquarieHandbook : IMacquarieHandbook
         return await DownloadDataAsCollection<MacquarieUnit>(apiRequest, cancellationToken);
     }
 
-    public async Task<MacquarieCourse> GetCourse(string courseCode, int? implementationYear = null, CancellationToken cancellationToken = default)
+    public async Task<MacquarieCourse?> GetCourse(string courseCode, int? implementationYear = null, CancellationToken cancellationToken = default)
     {
         HandbookApiRequestBuilder apiRequestBuilder = new(courseCode, implementationYear, APIResourceType.Course);
         var resultsCollection = await DownloadDataAsCollection<MacquarieCourse>(apiRequestBuilder);
-        return resultsCollection.Collection.FirstOrDefault() ?? new MacquarieCourse() { Code = "Not Found" };
+        return resultsCollection.Collection.FirstOrDefault(defaultValue: null);
     }
 
     public async Task<MacquarieDataCollection<MacquarieCourse>> GetAllCourses(int? implementationYear = null, int limit = 3000, CancellationToken cancellationToken = default)

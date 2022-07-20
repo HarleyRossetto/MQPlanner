@@ -34,7 +34,7 @@ public class HandbookController : ControllerBase
     }
 
     [HttpGet("[action]/{unitCode}")]
-    public async Task<UnitDto> GetUnit(string unitCode = "elec3042", [FromQuery] int? implementationYear = null, CancellationToken cancellationToken = default) {
+    public async Task<UnitDto> GetUnit(string unitCode = "comp2160", [FromQuery] int? implementationYear = null, CancellationToken cancellationToken = default) {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", unitCode);
 
         // // TODO Review how best to implement cacheing across all data.
@@ -88,10 +88,22 @@ public class HandbookController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("[action]")]
-    public async Task<IActionResult> GetAllUnits([FromQuery]int? implmentationYear = null, CancellationToken cancellationToken = default) {
-        return Ok(await _handbookDataProvider.GetAllUnits(implmentationYear, cancellationToken));
-    }
+    // [HttpGet("[action]")]
+    // public async Task<IActionResult> GetAllUnitsFromCourseLoop([FromQuery]int? implmentationYear = null, CancellationToken cancellationToken = default) {
+    //     return Ok(await _handbookDataProvider.GetAllUnits(implmentationYear, cancellationToken));
+    // }
+
+    // [HttpGet("[action]")]
+    // public async Task<IActionResult> GetAllUnitIds([FromQuery]int? implementationYear = null, CancellationToken ct = default) {
+    //     return Ok(await _handbookDataProvider.GetAllUnitIds(implementationYear, ct));
+    // }
+
+    // [HttpGet("[action]")]
+    // public async Task<IActionResult> Debug_DeleteMessyArchive() {
+    //     return Ok(await _handbookDataProvider.DeleteMessyArchive());
+    // }
+
+   
 
     // [HttpGet("[action]/{courseCode}")]
     // public async Task<CurriculumStructureDataDto> GetCourseStructure(string courseCode = "C000006") {

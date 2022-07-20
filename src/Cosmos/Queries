@@ -1,0 +1,13 @@
+-- Count all distinct unit codes.
+--SELECT COUNT(1) FROM (select DISTINCT c.Code from c)
+
+-- List all distinct unit codes
+--SELECT DISTINCT c.Code FROM c
+
+-- All Distinct unit codes for 2022
+SELECT DISTINCT c.id
+FROM c
+WHERE c.ImplementationYear="2022"
+
+-- Count all unqiue unit codes from 2022
+-- SELECT COUNT(1) FROM (select DISTINCT c.Code FROM c WHERE c.ImplementationYear="2022")

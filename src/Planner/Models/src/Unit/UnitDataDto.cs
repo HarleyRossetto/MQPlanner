@@ -20,6 +20,9 @@ public record UnitDataDto : MaterialMetadataDto
     //public bool SpecialTopic { get; init; }
     //public string AscedBroad { get; init; }
     public string? PlacementProportion { get; init; }
+    /// <summary>
+    /// I believe Description in this context is unused.
+    /// </summary>
     public List<string>? Description { get; init; }
     public List<LearningOutcomeDto>? LearningOutcomes { get; init; }
     public List<LearningActivityDto>? NonScheduledLearningActivities { get; init; }

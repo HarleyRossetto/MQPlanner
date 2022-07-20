@@ -18,6 +18,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     private readonly CosmosClient cosmosClient;
     private readonly Database cosmosDatabase;
     private readonly Container cosmosUnitContainer;
+    private readonly Container cosmosArchiveUnitContainer;
     private readonly Container cosmosCourseContainer;
 
     public CosmosHandbookDataProvider(ILogger<CosmosHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, JsonSerializer jsonSerializer, IConfiguration cfg) {
@@ -35,8 +36,10 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         string coursePartitionKeypath = $"/{nameof(CourseDto.UrlYear)}";
         cosmosCourseContainer = cosmosDatabase.CreateContainerIfNotExistsAsync(cfg["Azure:Cosmos:Containers:Course"],
                                                                                coursePartitionKeypath).Result;
-        //cosmosUnitContainer = cosmosDatabase.GetContainer(cfg["Azure:Cosmos:Containers:Unit"]);
-        // cosmosCourseContainer = cosmosDatabase.GetContainer(cfg["Azure:Cosmos:Containers:Course"]);
+
+        string archiveUnitPartitionKeyPath = $"/{nameof(UnitDto.ImplementationYear)}";
+        cosmosArchiveUnitContainer = cosmosDatabase.CreateContainerIfNotExistsAsync(cfg["Azure:Cosmos:Containers:UnitArchive"],
+                                                                                    archiveUnitPartitionKeyPath).Result;
     }
 
     private void ValidateImplementationYear(ref int? implementationYear) {
@@ -49,7 +52,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         }
     }
 
-    public async Task<CourseDto> GetCourse(string courseCode, int? implementationYear = null, CancellationToken cancellationToken = default) {
+    public async Task<CourseDto?> GetCourse(string courseCode, int? implementationYear = null, CancellationToken cancellationToken = default) {
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
 
         string itemKey = courseCode.ToUpper();
@@ -57,7 +60,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
 
         CourseDto? course = await ReadFromStreamAsync<CourseDto>(cosmosCourseContainer, new PartitionKey(partitionKey), itemKey, cancellationToken);
 
-        return course ?? new CourseDto() { Code = "Course Not Found" };
+        return course;
 
     }
 
@@ -105,7 +108,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         return results;
     }
 
-    private async Task<List<T>> RunQuery<T>(Container targetContainer, string queryString, string partitionKey = null) {
+    private async Task<List<T>> RunQuery<T>(Container targetContainer, string queryString, string? partitionKey = null) {
         if (targetContainer is null) {
             _logger.LogWarning("Parameter {0} of {1} cannot be null!", nameof(targetContainer), nameof(RunQuery));
             return new List<T>();
@@ -116,7 +119,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
             return new List<T>();
         }
 
-        QueryRequestOptions queryRequestOptions = null;
+        QueryRequestOptions queryRequestOptions = new();
 
         if (partitionKey is not null) {
             queryRequestOptions = new() { PartitionKey = new(partitionKey) };
@@ -128,9 +131,15 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         double aggerateRequestCharge = 0;
         using (FeedIterator<T> resultSetIterator = targetContainer.GetItemQueryIterator<T>(queryDefinition,
                                                                                            requestOptions: queryRequestOptions)) {
-            var response = await resultSetIterator.ReadNextAsync();
-            results.AddRange(response);
-            aggerateRequestCharge += response.RequestCharge;
+            while (resultSetIterator.HasMoreResults)
+            {
+                var response = await resultSetIterator.ReadNextAsync();
+                results.AddRange(response);
+                aggerateRequestCharge += response.RequestCharge;
+            }
+           // var response = await resultSetIterator.ReadNextAsync();
+            //results.AddRange(response);
+            // aggerateRequestCharge += response.RequestCharge;
         }
 
         _logger.LogInformation("Course Title Query ({0}) with partition key {1} returned {3} results consuming {4}RUs.",
@@ -142,7 +151,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         return results;
     }
 
-    public async Task<UnitDto> GetUnit(string unitCode, int? implementationYear = null, CancellationToken cancellationToken = default) {
+    public async Task<UnitDto?> GetUnit(string unitCode, int? implementationYear = null, CancellationToken cancellationToken = default) {
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
 
         //string itemKey = $"{unitCode.ToUpper()}.{implementationYear}";
@@ -151,8 +160,31 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
                                                            new PartitionKey($"{implementationYear}"),
                                                            unitCode.ToUpper(),
                                                            cancellationToken);
+        return unit;
+    }
 
-        return unit ?? new UnitDto() { Code = "Course Not Found" };
+    public async Task<List<UnitDto>> GetAllUnitsFromArchive(string? partition) {
+        return await GetAllItemsFromContainer<UnitDto>(cosmosArchiveUnitContainer, partition);
+    }
+
+    public async Task<List<UnitDto>> GetAllUnits(string? partition) {
+        return await GetAllItemsFromContainer<UnitDto>(cosmosUnitContainer, partition);
+    }
+
+    public async Task<List<CourseDto>> GetAllCourses(string? partition) {
+        return await GetAllCouresFromContainer<CourseDto>(cosmosCourseContainer, partition);
+    }
+
+    private async Task<List<T>> GetAllItemsFromContainer<T>(Container container, string? partitionKey) {
+        string query = $"SELECT * FROM c WHERE c.ImplementationYear=\"{partitionKey}\"";
+        _logger.LogInformation(query);
+        return await RunQuery<T>(container, query, null);
+    }
+
+      private async Task<List<CourseDto>> GetAllCouresFromContainer<CourseDto>(Container container, string? partitionKey) {
+        string query = $"SELECT * FROM c WHERE c.UrlYear=\"{partitionKey}\"";
+        _logger.LogInformation(query);
+        return await RunQuery<CourseDto>(container, query, null);
     }
 
     private async Task<T?> ReadFromStreamAsync<T>(Container container, PartitionKey partitionKey, string id, CancellationToken cancellationToken = default) where T : MetadataDto {
@@ -203,9 +235,13 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     }
 
     public async Task<ItemResponse<UnitDto>> SaveUnitToCosmos(UnitDto unit, CancellationToken cancellationToken) {
-        var partitionKey = new PartitionKey(unit.ImplementationYear?.ToString());
+        var partitionKey = new PartitionKey(unit.ImplementationYear);
+        return await SaveUnitToContainer(unit, cosmosUnitContainer, partitionKey, cancellationToken);
+    }
+
+    private async Task<ItemResponse<UnitDto>> SaveUnitToContainer(UnitDto unit, Container container, PartitionKey partitionKey, CancellationToken cancellationToken) {
         try {
-            var itemResult = await cosmosUnitContainer.CreateItemAsync(unit, partitionKey, null, cancellationToken);
+            var itemResult = await container.UpsertItemAsync(unit, partitionKey, null, cancellationToken);
             return itemResult;
         } catch (CosmosException ex) {
             _logger.LogInformation(ex.Message);
@@ -213,9 +249,55 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         return null!;
     }
 
+
+//    "ModificationDate": "2022-01-28T17:42:23.646", archive
+// new  "ModificationDate": "2022-04-23T05:25:47.171",
+
+    public async Task<ItemResponse<UnitDto>> ArchiveUnitToCosmos(UnitDto unit, CancellationToken cancellationToken = default) {
+         var partitionKey = new PartitionKey($"{unit.ImplementationYear}");
+        //:{unit.ModificationDate?.ToString("yyyyMMddTHHmmssZ")}");
+        //unit.Code.Append($"{unit.ModificationDate?.ToString("yyyyMMddTHHmmssZ")}");
+
+        // Messy for creating unique-ness but will append the modification date time to the Code.
+        //var archivableUnit = unit with { Code = $"{unit.Code}:{unit.ModificationDate?.ToString("yyyyMMddTHHmmssZ")}" };
+        var archivableUnit = unit with { Archived = true };
+
+        _logger.LogInformation($"Archived {archivableUnit.Code} with id: {archivableUnit.Id}");
+
+        return await SaveUnitToContainer(archivableUnit, cosmosArchiveUnitContainer, partitionKey, cancellationToken);
+    }
+
     public async Task<List<UnitDto>> GetAllUnits(int? implementationYear, CancellationToken cancellationToken = default) {
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
 
-        return await RunQuery<UnitDto>(cosmosUnitContainer, $"SELECT * FROM u", implementationYear.ToString());
+        return await RunQuery<UnitDto>(cosmosUnitContainer, $"SELECT * FROM c", implementationYear.ToString());
+    }
+
+    record Id(string id);
+
+    public async Task<IEnumerable<string>> GetAllUnitIds(int? implementationyear, CancellationToken cancellationToken = default) {
+        var result = await RunQuery<Id>(cosmosUnitContainer, "SELECT DISTINCT c.id FROM c WHERE c.ImplementationYear=\"2022\"", implementationyear?.ToString());
+        return from r in result select r.id;
+    }
+
+    public async Task<bool> DeleteMessyArchive() {
+
+        var mainUnits = await RunQuery<UnitDto>(cosmosUnitContainer, $"SELECT * FROM u", "2022");
+        var archiveUnits = await RunQuery<UnitDto>(cosmosArchiveUnitContainer, $"SELECT * FROM u", "2022");
+
+        List<UnitDto> unitsToDeleteFromArchive = new();
+
+        archiveUnits.ForEach(u => {
+            if (mainUnits.Any((unit) => {
+                return unit.Code == u.Code && unit.Version == u.Version;
+            })) {
+                unitsToDeleteFromArchive.Add(u);
+            }
+        });
+
+        foreach (var unit in unitsToDeleteFromArchive) {
+            await cosmosArchiveUnitContainer.DeleteItemAsync<UnitDto>(unit.Id, new(unit.ImplementationYear));
+        }
+        return true;
     }
 }
