@@ -5,6 +5,7 @@ using Courseloop.DataAccess;
 using HXR.Utilities.DateTime;
 using HXR.Utilities.DateTime.Providers;
 using Newtonsoft.Json;
+using Planner.Api.Services;
 using Planner.Api.Services.DataAccess;
 using Planner.Models;
 
@@ -33,6 +34,8 @@ builder.Services.AddSingleton<JsonSerializer>();
 builder.Services.AddSingleton<IHandbookDataProvider, PlannerHandbookDataProvider>();
 builder.Services.AddHttpClient<MacquarieHandbook>();
 builder.Services.AddSingleton<CosmosHandbookDataProvider>();
+
+builder.Services.AddHostedService<ResourceUpdateHostedService>();
 
 // Configure class mappings via profile.
 builder.Services.AddAutoMapper(cfg => {

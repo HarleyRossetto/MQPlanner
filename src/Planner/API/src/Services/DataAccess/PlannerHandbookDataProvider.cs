@@ -49,6 +49,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
         var aggeratedRequestUnits = 0.0D;
         var savedUnits = 0;
         
+        // Uses a lot of Request Units
         var cosmosUnitIds = await _cosmosHandbookDataProvider.GetAllUnitIds(implementationyear, cancellationToken);
 
         sw.Restart();
@@ -56,6 +57,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
             // Do we need to archive the unit?
             if (cosmosUnitIds.Contains(unit.Code)) {
                 //Get the unit from cosmos
+                // Also uses a lot of Request Units over time.
                 var cosmosUnit = await _cosmosHandbookDataProvider.GetUnit(unit.Code,
                                                                     int.Parse(unit.ImplementationYear!),
                                                                     cancellationToken);
