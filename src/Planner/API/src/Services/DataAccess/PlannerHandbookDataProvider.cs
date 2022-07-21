@@ -20,7 +20,6 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
     private readonly CosmosHandbookDataProvider _cosmosHandbookDataProvider;
     private readonly MacquarieHandbook _courseloopHandbookDataProvider;
     private readonly IMapper _mapper;
-    private IEnumerable<string> cosmosUnitIds;
 
     public PlannerHandbookDataProvider(ILogger<PlannerHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, IMemoryCache memoryCache, CosmosHandbookDataProvider cosmosHandbookDataProvider, MacquarieHandbook courseloopHandbookDataProvider, IMapper mapper) {
         _logger = logger;
@@ -33,54 +32,64 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
 
     public async Task<List<UnitDto>> GetAllUnits(int? implementationyear, CancellationToken cancellationToken = default) {
         var sw = Stopwatch.StartNew();
-        var units = await _courseloopHandbookDataProvider.GetAllUnits(implementationyear, 4000, cancellationToken);
+        var cl_units = await _courseloopHandbookDataProvider.GetAllUnits(implementationyear, 4000, cancellationToken);
         sw.Stop();
         _logger.LogInformation("All units retrieved from source in {0} seconds", sw.Elapsed.TotalSeconds);
 
         sw.Restart();
-        List<UnitDto> mappedUnits = new();
+        List<UnitDto> mappedCourseLoopUnits = new();
 
-        foreach (var unit in units) {
-            mappedUnits.Add(_mapper.Map<MacquarieUnit, UnitDto>(unit));
+        foreach (var unit in cl_units) {
+            mappedCourseLoopUnits.Add(_mapper.Map<MacquarieUnit, UnitDto>(unit));
         }
+
         sw.Stop();
         _logger.LogInformation("Mapping data completed in {0} seconds.", sw.Elapsed.TotalSeconds);
 
         var aggeratedRequestUnits = 0.0D;
         var savedUnits = 0;
-        
-        // Uses a lot of Request Units
-        var cosmosUnitIds = await _cosmosHandbookDataProvider.GetAllUnitIds(implementationyear, cancellationToken);
+
+        // Get dictionary of Code(ids) and versions to help decide what needs to be archived.
+        var unitsInCosmosDb = 
+            (await _cosmosHandbookDataProvider.GetAllUnitsAndVersions(implementationyear, cancellationToken))
+                .ToDictionary(codeVersionPair => {
+                    return codeVersionPair.Code;
+                });
 
         sw.Restart();
-        foreach (var unit in mappedUnits) {
+        foreach (var cl_unit in mappedCourseLoopUnits) {
+            //var cUnit = cosmosUnits.Single(o => o.id == unit.Code);
+
             // Do we need to archive the unit?
-            if (cosmosUnitIds.Contains(unit.Code)) {
+            if (unitsInCosmosDb.TryGetValue(cl_unit.Code, out var cosmosUnit)) {
                 //Get the unit from cosmos
                 // Also uses a lot of Request Units over time.
-                var cosmosUnit = await _cosmosHandbookDataProvider.GetUnit(unit.Code,
-                                                                    int.Parse(unit.ImplementationYear!),
-                                                                    cancellationToken);
-
+                // var cosmosUnit = await _cosmosHandbookDataProvider.GetUnit(unit.Code,
+                //int.Parse(unit.ImplementationYear!),
+                //cancellationToken);
                 // If the cosmos unit is not null, archive it.
-                if (cosmosUnit is not null && cosmosUnit.Version != unit.Version) {
-                    _logger.LogInformation("Replacing {0} v.{1} with v.{2}", cosmosUnit.Code, cosmosUnit.Version, unit.Version);
+                if (cosmosUnit.Version != cl_unit.Version) {
+                    _logger.LogInformation("Replacing {0} v.{1} with v.{2}", cosmosUnit.Code, cosmosUnit.Version, cl_unit.Version);
                     //_logger.LogInformation("CosmosUnit {0} with version {1} and Courseloop {2} with version {3}", cosmosUnit.Code, cosmosUnit.Version, unit.Code, unit.Version);
-                    var cosmosItemResponse =
-                        await _cosmosHandbookDataProvider.ArchiveUnitToCosmos(
-                            cosmosUnit,
-                            cancellationToken);
-                    _logger.LogInformation(cosmosItemResponse.ToString());
-                }
-            }
+                    var unitToArchive = await _cosmosHandbookDataProvider.GetUnit(cl_unit.Code, implementationyear, cancellationToken);
 
-            // Dont use cosmos types and name spaces here, they dont belong and are out of scope of this class.
-            var response = await _cosmosHandbookDataProvider.SaveUnitToCosmos(unit, cancellationToken);
-            if (response is not null) {
-                if (response.StatusCode == System.Net.HttpStatusCode.Created) {
-                    savedUnits++;
+                    if (unitToArchive is not null) {
+                        var cosmosItemResponse =
+                            await _cosmosHandbookDataProvider.ArchiveUnitToCosmos(
+                                unitToArchive,
+                                cancellationToken);
+
+                        aggeratedRequestUnits += cosmosItemResponse.RequestCharge;
+                        _logger.LogInformation(cosmosItemResponse.ToString());
+                    }
+
+                    // Dont use cosmos types and name spaces here, they dont belong and are out of scope of this class.
+                    var response = await _cosmosHandbookDataProvider.SaveUnitToCosmos(cl_unit, cancellationToken);
+                    if (response is not null) {
+                        savedUnits++;
+                        aggeratedRequestUnits += response.RequestCharge;
+                    }
                 }
-                aggeratedRequestUnits += response.RequestCharge;
             }
         }
 
@@ -127,7 +136,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
 
     private bool TryGetUnitFromCache(string unitCode, int? implmentationYear, out UnitDto cachedUnit) {
         var cacheKey = (unitCode.ToUpper(), implmentationYear.ToString());
-        
+
         if (_memoryCache.TryGetValue<UnitDto>(cacheKey, out var unit)) {
             cachedUnit = unit;
             return true;
@@ -137,7 +146,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
         return false;
     }
 
-    
+
     // private UnitDto SaveUnitToCache(UnitDto unit) {
     //      // If the unit code matches and the unit was retrieved in the last 30 days
     //     if (unit is not null &&

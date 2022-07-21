@@ -108,7 +108,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
         return results;
     }
 
-    private async Task<List<T>> RunQuery<T>(Container targetContainer, string queryString, string? partitionKey = null) {
+    private async Task<List<T>> RunQuery<T>(Container targetContainer, string queryString, string? partitionKey = null, CancellationToken cancellationToken = default) {
         if (targetContainer is null) {
             _logger.LogWarning("Parameter {0} of {1} cannot be null!", nameof(targetContainer), nameof(RunQuery));
             return new List<T>();
@@ -129,11 +129,12 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
 
         var results = new List<T>();
         double aggerateRequestCharge = 0;
+
         using (FeedIterator<T> resultSetIterator = targetContainer.GetItemQueryIterator<T>(queryDefinition,
                                                                                            requestOptions: queryRequestOptions)) {
-            while (resultSetIterator.HasMoreResults)
+            while (resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
             {
-                var response = await resultSetIterator.ReadNextAsync();
+                var response = await resultSetIterator.ReadNextAsync(cancellationToken);
                 results.AddRange(response);
                 aggerateRequestCharge += response.RequestCharge;
             }
@@ -160,6 +161,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
                                                            new PartitionKey($"{implementationYear}"),
                                                            unitCode.ToUpper(),
                                                            cancellationToken);
+       
         return unit;
     }
 
@@ -220,7 +222,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
 
     public async Task<CourseDto> SaveCourseToCosmos(CourseDto course, CancellationToken cancellationToken = default) {
         using (Stream stream = await ToStream<CourseDto>(course)) {
-            using (ResponseMessage response = await cosmosCourseContainer.CreateItemStreamAsync(stream, new PartitionKey(course.UrlYear))) {
+            using (ResponseMessage response = await cosmosCourseContainer.CreateItemStreamAsync(stream, new PartitionKey(course.UrlYear), null, cancellationToken)) {
                 if (response.IsSuccessStatusCode) {
                      _logger.LogInformation("Course with code: {0} saved to CosmosDB using {1} RUs.", course.Code, response.Headers.RequestCharge);
                 } else {
@@ -242,16 +244,13 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     private async Task<ItemResponse<UnitDto>> SaveUnitToContainer(UnitDto unit, Container container, PartitionKey partitionKey, CancellationToken cancellationToken) {
         try {
             var itemResult = await container.UpsertItemAsync(unit, partitionKey, null, cancellationToken);
+            
             return itemResult;
         } catch (CosmosException ex) {
             _logger.LogInformation(ex.Message);
         }
         return null!;
     }
-
-
-//    "ModificationDate": "2022-01-28T17:42:23.646", archive
-// new  "ModificationDate": "2022-04-23T05:25:47.171",
 
     public async Task<ItemResponse<UnitDto>> ArchiveUnitToCosmos(UnitDto unit, CancellationToken cancellationToken = default) {
          var partitionKey = new PartitionKey($"{unit.ImplementationYear}");
@@ -270,7 +269,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     public async Task<List<UnitDto>> GetAllUnits(int? implementationYear, CancellationToken cancellationToken = default) {
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
 
-        return await RunQuery<UnitDto>(cosmosUnitContainer, $"SELECT * FROM c", implementationYear.ToString());
+        return await RunQuery<UnitDto>(cosmosUnitContainer, $"SELECT * FROM c", implementationYear.ToString(), cancellationToken);
     }
 
     record Id(string id);
@@ -278,6 +277,12 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     public async Task<IEnumerable<string>> GetAllUnitIds(int? implementationyear, CancellationToken cancellationToken = default) {
         var result = await RunQuery<Id>(cosmosUnitContainer, "SELECT DISTINCT c.id FROM c WHERE c.ImplementationYear=\"2022\"", implementationyear?.ToString());
         return from r in result select r.id;
+    }
+
+    public readonly record struct CosmosUnitVersionPair(string Code, string Version);
+    public async Task<IEnumerable<CosmosUnitVersionPair>> GetAllUnitsAndVersions(int? implementationyear, CancellationToken cancellationToken = default) {
+        var result = await RunQuery<CosmosUnitVersionPair>(cosmosUnitContainer, "SELECT c.id AS Code, c.Version FROM c WHERE c.ImplementationYear=\"2022\"", implementationyear?.ToString());
+        return result;
     }
 
     public async Task<bool> DeleteMessyArchive() {
@@ -297,6 +302,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
 
         foreach (var unit in unitsToDeleteFromArchive) {
             await cosmosArchiveUnitContainer.DeleteItemAsync<UnitDto>(unit.Id, new(unit.ImplementationYear));
+            
         }
         return true;
     }

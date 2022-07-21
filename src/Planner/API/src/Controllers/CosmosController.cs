@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Planner.Api.Services.DataAccess;
+using Planner.Models.Shared;
 
 namespace src.Controllers
 {
@@ -22,52 +23,40 @@ namespace src.Controllers
         public async Task<IActionResult> DownloadAllDataFromArchiveContainer(int year = 2022, CancellationToken cancellationToken = default) {
             var units = await _cosmos.GetAllUnitsFromArchive(year.ToString());
 
-            if (!units.Any()) {
-                return NoContent();
-            }
-
-            Directory.CreateDirectory($"Archive/ArchivedUnits/ImplYear_{year}");
-            foreach (var unit in units) {
-                var text = JsonConvert.SerializeObject(unit, Formatting.Indented, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-                await System.IO.File.WriteAllTextAsync($"Archive/ArchivedUnits/ImplYear_{year}/{unit.Code}.json", text);
-            }
-
-            return Ok($"{units.Count} units have been downloaded and saved.");
-        }
+            return Ok(await SerialiseAll(units, "Units", year, cancellationToken));
+    }
 
         [HttpGet("[action]")]
         public async Task<IActionResult> DownloadAllDataFromUnitContainer(int year = 2022, CancellationToken cancellationToken = default) {
             var units = await _cosmos.GetAllUnits(year.ToString());
 
-            if (!units.Any()) {
-                return NoContent();
-            }
-
-            Directory.CreateDirectory($"Archive/Units/ImplYear_{year}");
-            foreach (var unit in units) {
-                var text = JsonConvert.SerializeObject(unit, Formatting.Indented, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-                await System.IO.File.WriteAllTextAsync($"Archive/Units/ImplYear_{year}/{unit.Code}.json", text);
-            }
-
-            return Ok($"{units.Count} units have been downloaded and saved.");
+            return Ok(await SerialiseAll(units, "Units", year, cancellationToken));
         }
 
         [HttpGet("[action]")]
         public async Task<IActionResult> DownloadAllDataFromCourseContainer(int year = 2022, CancellationToken cancellationToken = default) {
-            var units = await _cosmos.GetAllCourses(year.ToString() + "handbooks");
+            var courses = await _cosmos.GetAllCourses(year.ToString() + "handbooks");
 
-            if (!units.Any()) {
-                return NoContent();
+            return Ok(await SerialiseAll(courses, "Course", year, cancellationToken));
+      }
+
+        public async ValueTask<string> SerialiseAll<T>(List<T> collection, string dataType, int year, CancellationToken ct) where T : MetadataDto {
+            if (!collection.Any()) {
+                return string.Empty;
             }
 
-            Directory.CreateDirectory($"Archive/Course/ImplYear_{year}");
-            foreach (var unit in units) {
-                var text = JsonConvert.SerializeObject(unit, Formatting.Indented, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-                await System.IO.File.WriteAllTextAsync($"Archive/Course/ImplYear_{year}/{unit.Code}.json", text);
+            string path = $"Archive/{dataType}/ImplYear_{year}";
+            Directory.CreateDirectory(path);
+            foreach (var item in collection) {
+                var json = JsonConvert.SerializeObject(item, Formatting.Indented, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
+                string filePath = $"{path}/{item.Code}.json";
+                await System.IO.File.WriteAllTextAsync(filePath, json, cancellationToken: ct);
             }
-            string msg = $"{units.Count} units have been downloaded and saved.";
+
+            string msg = $"{collection.Count} {dataType} have been downloaded and saved.";
             _logger.LogInformation(msg);
-            return Ok(msg);
+
+            return msg;
         }
     }
 }
