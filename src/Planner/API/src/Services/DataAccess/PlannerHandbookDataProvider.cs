@@ -8,8 +8,11 @@ using Courseloop.DataAccess;
 using Courseloop.Models.Shared;
 using Courseloop.Models.Unit;
 using HXR.Utilities.DateTime;
+using Microsoft.ApplicationInsights;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Caching.Memory;
+using Planner.Api.Services.Telemetry;
 using Planner.Models.Course;
 using Planner.Models.Unit;
 
@@ -20,16 +23,30 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
     private readonly CosmosHandbookDataProvider _cosmosHandbookDataProvider;
     private readonly MacquarieHandbook _courseloopHandbookDataProvider;
     private readonly IMapper _mapper;
+    private readonly ITelemetryProvider _telem;
 
-    public PlannerHandbookDataProvider(ILogger<PlannerHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, IMemoryCache memoryCache, CosmosHandbookDataProvider cosmosHandbookDataProvider, MacquarieHandbook courseloopHandbookDataProvider, IMapper mapper) {
+    public PlannerHandbookDataProvider(ILogger<PlannerHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, IMemoryCache memoryCache, CosmosHandbookDataProvider cosmosHandbookDataProvider, MacquarieHandbook courseloopHandbookDataProvider, IMapper mapper, ITelemetryProvider telem) {
         _logger = logger;
         _dateTimeProvider = dateTimeProvider;
         _memoryCache = memoryCache;
         _cosmosHandbookDataProvider = cosmosHandbookDataProvider;
         _courseloopHandbookDataProvider = courseloopHandbookDataProvider;
         _mapper = mapper;
+        _telem = telem;
     }
 
+    /// <summary>
+    /// Metrics:
+    ///     New units
+    ///     Updated units
+    ///     
+    ///     execution time
+    ///     RUs used
+    /// </summary>
+    /// <param name="implementationyear"></param>
+    /// <param name="telemetryClient"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<List<UnitDto>> GetAllUnits(int? implementationyear, CancellationToken cancellationToken = default) {
         var sw = Stopwatch.StartNew();
         var cl_units = await _courseloopHandbookDataProvider.GetAllUnits(implementationyear, 4000, cancellationToken);
@@ -48,6 +65,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
 
         var aggeratedRequestUnits = 0.0D;
         var savedUnits = 0;
+        var updatedUnits = new List<string>();
 
         // Get dictionary of Code(ids) and versions to help decide what needs to be archived.
         var unitsInCosmosDb = 
@@ -70,6 +88,9 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
                 // If the cosmos unit is not null, archive it.
                 if (cosmosUnit.Version != cl_unit.Version) {
                     _logger.LogInformation("Replacing {0} v.{1} with v.{2}", cosmosUnit.Code, cosmosUnit.Version, cl_unit.Version);
+                    
+                    updatedUnits.Add(cl_unit.Code); // For metrics
+
                     //_logger.LogInformation("CosmosUnit {0} with version {1} and Courseloop {2} with version {3}", cosmosUnit.Code, cosmosUnit.Version, unit.Code, unit.Version);
                     var unitToArchive = await _cosmosHandbookDataProvider.GetUnit(cl_unit.Code, implementationyear, cancellationToken);
 
@@ -81,14 +102,18 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
 
                         aggeratedRequestUnits += cosmosItemResponse.RequestCharge;
                         _logger.LogInformation(cosmosItemResponse.ToString());
+                        await _telem.LogUnitUpdated(cosmosItemResponse.Resource.Code, cosmosItemResponse.Resource.Version!, cosmosUnit.Version);
                     }
 
-                    // Dont use cosmos types and name spaces here, they dont belong and are out of scope of this class.
-                    var response = await _cosmosHandbookDataProvider.SaveUnitToCosmos(cl_unit, cancellationToken);
-                    if (response is not null) {
-                        savedUnits++;
-                        aggeratedRequestUnits += response.RequestCharge;
-                    }
+                   
+                }
+            } else {
+                // Dont use cosmos types and name spaces here, they dont belong and are out of scope of this class.
+                var response = await _cosmosHandbookDataProvider.SaveUnitToCosmos(cl_unit, cancellationToken);
+                if (response is not null) {
+                    savedUnits++;
+                    aggeratedRequestUnits += response.RequestCharge;
+                    await _telem.LogUnitAdded(response.Resource.Code, response.Resource.Version!);
                 }
             }
         }
@@ -96,6 +121,7 @@ public class PlannerHandbookDataProvider : IHandbookDataProvider {
         sw.Stop();
 
         _logger.LogInformation("{0} units saved to Cosmos costing {1} RUs taking {2}. RUs per second {3}", savedUnits, aggeratedRequestUnits, sw.Elapsed, aggeratedRequestUnits / sw.Elapsed.TotalSeconds);
+
 
         return new();
     }

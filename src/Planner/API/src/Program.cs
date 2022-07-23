@@ -4,9 +4,11 @@ using Azure.Identity;
 using Courseloop.DataAccess;
 using HXR.Utilities.DateTime;
 using HXR.Utilities.DateTime.Providers;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using Planner.Api.Services;
 using Planner.Api.Services.DataAccess;
+using Planner.Api.Services.Telemetry;
 using Planner.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,8 @@ builder.Services.AddSwaggerGen();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 builder.Services.AddSingleton<IMacquarieHandbook, MacquarieHandbook>();
 //builder.Services.AddSingleton<IMacquarieHandbook, CosmosHandbookProviderOld>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
@@ -34,6 +38,13 @@ builder.Services.AddSingleton<JsonSerializer>();
 builder.Services.AddSingleton<IHandbookDataProvider, PlannerHandbookDataProvider>();
 builder.Services.AddHttpClient<MacquarieHandbook>();
 builder.Services.AddSingleton<CosmosHandbookDataProvider>();
+
+builder.Services.AddSingleton<CosmosClient>(service => {
+    return new CosmosClient(builder.Configuration.GetValue<string>(builder.Configuration["Azure:KeyVault:CosmosConnectionStrings:ReadWrite"]));
+});
+
+
+builder.Services.AddSingleton<ITelemetryProvider, CosmosTelemetry>();
 
 builder.Services.AddHostedService<ResourceUpdateHostedService>();
 

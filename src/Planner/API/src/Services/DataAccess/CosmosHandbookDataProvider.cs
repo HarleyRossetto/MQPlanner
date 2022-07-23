@@ -15,19 +15,20 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
     private readonly ILogger<CosmosHandbookDataProvider> _logger;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly JsonSerializer _jsonSerializer;
-    private readonly CosmosClient cosmosClient;
+    private readonly CosmosClient _cosmosClient;
     private readonly Database cosmosDatabase;
     private readonly Container cosmosUnitContainer;
     private readonly Container cosmosArchiveUnitContainer;
     private readonly Container cosmosCourseContainer;
 
-    public CosmosHandbookDataProvider(ILogger<CosmosHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, JsonSerializer jsonSerializer, IConfiguration cfg) {
+    public CosmosHandbookDataProvider(ILogger<CosmosHandbookDataProvider> logger, IDateTimeProvider dateTimeProvider, JsonSerializer jsonSerializer, CosmosClient cosmosClient, IConfiguration cfg) {
         _logger = logger;
         _dateTimeProvider = dateTimeProvider;
         _jsonSerializer = jsonSerializer;
+        _cosmosClient = cosmosClient;
 
-        cosmosClient = new(cfg.GetValue<string>(cfg["Azure:KeyVault:CosmosConnectionStrings:ReadWrite"]));
-        cosmosDatabase = cosmosClient.GetDatabase(cfg["Azure:Cosmos:DatabaseId"]);
+        //cosmosClient = new(cfg.GetValue<string>(cfg["Azure:KeyVault:CosmosConnectionStrings:ReadWrite"]));
+        cosmosDatabase = _cosmosClient.GetDatabase(cfg["Azure:Cosmos:DatabaseId"]);
 
         string unitPartionKeyPath = $"/{nameof(UnitDto.ImplementationYear)}";
         cosmosUnitContainer = cosmosDatabase.CreateContainerIfNotExistsAsync(cfg["Azure:Cosmos:Containers:Unit"],
@@ -259,7 +260,7 @@ public class CosmosHandbookDataProvider : IHandbookDataProvider {
 
         // Messy for creating unique-ness but will append the modification date time to the Code.
         //var archivableUnit = unit with { Code = $"{unit.Code}:{unit.ModificationDate?.ToString("yyyyMMddTHHmmssZ")}" };
-        var archivableUnit = unit with { Archived = true };
+        var archivableUnit = unit with { Archived = true, Code = $"{unit.Code}:{unit.ModificationDate?.ToString("yyyyMMddTHHmmssZ")}" };
 
         _logger.LogInformation($"Archived {archivableUnit.Code} with id: {archivableUnit.Id}");
 
