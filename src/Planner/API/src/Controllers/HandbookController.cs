@@ -46,8 +46,9 @@ public class HandbookController : ControllerBase
 
         // _cache.Set(unit.Code, unit, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
 
-        // return unit;
-        return await _handbookDataProvider.GetUnit(unitCode, implementationYear, cancellationToken);   
+        // return unit;\
+        //TODO Change return type to IActionResult or similar
+        return await _handbookDataProvider.GetUnit(unitCode, implementationYear, cancellationToken) ?? new();   
     }
 
      [HttpGet("[action]/{unitCode}")]
@@ -65,14 +66,16 @@ public class HandbookController : ControllerBase
 
         // return unit;
         implementationYear ??= _dateTimeProvider.DateTimeNow.Year;
-        return await _handbook.GetUnit(unitCode, implementationYear, cancellationToken);
+        //TODO Change return type to IActionResult or similar
+        return await _handbook.GetUnit(unitCode, implementationYear, cancellationToken) ?? new();
     }
 
     [HttpGet("[action]/{courseCode}")]
     public async Task<CourseDto> GetCourse(string courseCode = "C000105") {
         _logger.LogInformation("Attempting to retrieve data for {unitCode}", courseCode);
         // return _mapper.Map<CourseDto>(await _handbook.GetCourseAsync(courseCode));
-        return await _handbookDataProvider.GetCourse(courseCode);
+        //TODO Change return type to IActionResult or similar
+        return await _handbookDataProvider.GetCourse(courseCode) ?? new();
     }
 
     [HttpGet("[action]/{courseName}")]
