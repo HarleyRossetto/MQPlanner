@@ -34,14 +34,20 @@ public class MacquarieHandbook : IMacquarieHandbook
     {
         _logger.LogInformation("Retrieving json data from {url}.", url);
 
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        try {
+            var response = await _httpClient.GetAsync(url, cancellationToken);
 
-        if (response.IsSuccessStatusCode)
-        {
-            return await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.IsSuccessStatusCode) {
+                return await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+            
+            _logger.LogWarning("Http data request failed. Response: {response}", response);
+        } catch (HttpRequestException ex) {
+            _logger.LogError(ex, $"Http call failed with code: {ex.StatusCode}");
+        } catch (Exception genericEx) {
+            _logger.LogError(genericEx, "Unknown Http error occured.");
         }
 
-        _logger.LogWarning("Http data request failed. Response: {response}", response);
         return string.Empty;
     }
 
